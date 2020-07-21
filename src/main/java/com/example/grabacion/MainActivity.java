@@ -1,6 +1,7 @@
 package com.example.grabacion;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
@@ -10,6 +11,7 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -20,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS = 1234;
     private static final  int SAMPLING_RATE_IN_HZ = 44100;
     private static final  int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final  int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
@@ -40,6 +44,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+        }
 
         startButton = findViewById(R.id.btnplay);
         startButton.setOnClickListener(new View.OnClickListener() {
@@ -80,11 +92,7 @@ public class MainActivity extends AppCompatActivity {
         audioRecord = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, SAMPLING_RATE_IN_HZ, CHANNEL_CONFIG,
                 AUDIO_FORMAT, BUFFER_SIZE);
 
-        int permissionAudioRecord = ContextCompat.checkSelfPermission(this,
-                Manifest.permission.RECORD_AUDIO);
-        if (permissionAudioRecord == PackageManager.PERMISSION_DENIED) {
-            return;
-        }
+
 
         audioRecord.startRecording();
 
@@ -106,7 +114,23 @@ public class MainActivity extends AppCompatActivity {
         recordingThread = null;
 
     }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_READ_CONTACTS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startRecording();
 
+                } else {
+                    Log.d("TAG", "permission denied by user");
+                }
+                return;
+            }
+        }
+    }
     private class RecordingRunnable implements Runnable{
 
         @Override
